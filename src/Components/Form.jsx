@@ -37,6 +37,11 @@ class Form extends Component {
       classList: [],
       isEditing: false,
       currentIndex: null,
+      errors: {
+        className: "",
+        date: "",
+        subjects: "",
+      },
     };
   }
 
@@ -54,23 +59,50 @@ class Form extends Component {
 
   handleInputChange = (event) => {
     const { name, value } = event.target;
-    this.setState({ [name]: value });
+    this.setState({ [name]: value, errors: { ...this.state.errors, [name]: "" } });
+  };
+
+  validate = () => {
+    const { className, date, subjects } = this.state;
+    const errors = {};
+    let isValid = true;
+
+    // Validate Class Name
+    if (!className) {
+      errors.className = "Class Name is required";
+      isValid = false;
+    }
+
+    // Validate Date
+    if (!date) {
+      errors.date = "Date is required";
+      isValid = false;
+    }
+
+    // Validate Subjects
+    if (!subjects) {
+      errors.subjects = "Subjects are required";
+      isValid = false;
+    }
+
+    this.setState({ errors });
+    return isValid;
   };
 
   handleSubmit = (event) => {
     event.preventDefault();
-    const { className, date, subjects, isEditing, currentIndex, classList } =
-      this.state;
+    const { className, date, subjects, isEditing, currentIndex, classList } = this.state;
+
+    if (!this.validate()) {
+      return; // Stop submission if validation fails
+    }
 
     const newClass = { title: className, body: subjects, date };
 
     if (isEditing) {
       // Update class (PUT request)
       axios
-        .put(
-          `https://jsonplaceholder.typicode.com/posts/${currentIndex + 1}`,
-          newClass
-        )
+        .put(`https://jsonplaceholder.typicode.com/posts/${currentIndex + 1}`, newClass)
         .then((response) => {
           const updatedClasses = classList.map((classItem, index) =>
             index === currentIndex ? response.data : classItem
@@ -133,7 +165,7 @@ class Form extends Component {
   };
 
   render() {
-    const { className, date, subjects, classList, isEditing } = this.state;
+    const { className, date, subjects, classList, isEditing, errors } = this.state;
 
     return (
       <div className="container my-5">
@@ -149,9 +181,9 @@ class Form extends Component {
                 name="className"
                 value={className}
                 onChange={this.handleInputChange}
-                required
                 className="form-control"
               />
+              {errors.className && <small className="text-danger">{errors.className}</small>}
             </div>
             <div className="form-group">
               <label>Date:</label>
@@ -160,9 +192,9 @@ class Form extends Component {
                 name="date"
                 value={date}
                 onChange={this.handleInputChange}
-                required
                 className="form-control"
               />
+              {errors.date && <small className="text-danger">{errors.date}</small>}
             </div>
             <div className="form-group">
               <label>Subjects:</label>
@@ -171,9 +203,9 @@ class Form extends Component {
                 name="subjects"
                 value={subjects}
                 onChange={this.handleInputChange}
-                required
                 className="form-control"
               />
+              {errors.subjects && <small className="text-danger">{errors.subjects}</small>}
             </div>
             <button type="submit" className="btn btn-primary w-100 mt-3">
               {isEditing ? "Update Class" : "Add Class"}
